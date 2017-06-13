@@ -1,0 +1,57 @@
+heat_template_version: newton
+
+description: >
+  Returns an IP from a network mapped list of IPs
+
+parameters:
+  ControlPlaneNetName:
+    description: Name of the Control Plane network for this port
+    default: ctlplane
+    type: string
+  PortName:
+    description: Name of the port
+    default: ''
+    type: string
+  IPPool:
+    default: {}
+    description: A network mapped list of IPs
+    type: json
+  NodeIndex:
+    default: 0
+    description: Index of the IP to get from Pool
+    type: number
+  ControlPlaneNetCidr:
+    default: '192.168.24.0/24'
+    description: Cidr for the ctlplane network.
+    type: string
+
+resources:
+
+  ControlPlanePort:
+    type: OS::Neutron::Port
+    properties:
+      network: {get_param: ControlPlaneNetName}
+      name: {get_param: PortName}
+      fixed_ips:
+        - ip_address: {get_param: [IPPool, {get_param: ControlPlaneNetName}, {get_param: NodeIndex}]}
+      replacement_policy: AUTO
+
+outputs:
+  port_id:
+    description: The ID of the ControlPlanePort resource
+    value: {get_resource: ControlPlanePort}
+  ip_address:
+    description: Control plane (Provisioning) network IP
+    value: {get_attr: [ControlPlanePort, fixed_ips, 0, ip_address]}
+  ip_address_uri:
+    description: |
+        control plane network IP (for compatibility with ctlplane_v6.yaml)
+    value: {get_attr: [ControlPlanePort, fixed_ips, 0, ip_address]}
+  ip_subnet:
+    description: IP/Subnet CIDR for the Control Plane network IP
+    value:
+          list_join:
+            - ''
+            - - {get_attr: [ControlPlanePort, fixed_ips, 0, ip_address]}
+              - '/'
+              - {str_split: ['/', {get_attr: [ControlPlanePort, subnets, 0, cidr]}, 1]}

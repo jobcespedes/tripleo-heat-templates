@@ -150,6 +150,7 @@ resources:
       key_name: {get_param: KeyName}
       networks:
         - network: ctlplane
+          port: {get_attr: [ControlPlanePort, port_id]}
       user_data_format: SOFTWARE_CONFIG
       user_data: {get_resource: UserData}
       name:
@@ -179,6 +180,12 @@ resources:
   # Should return a OS::Heat::MultipartMime reference via OS::stack_id
   NodeUserData:
     type: OS::TripleO::NodeUserData
+
+  ControlPlanePort:
+    type: OS::TripleO::Controller::Ports::ControlPlanePort
+    properties:
+      IPPool: {get_param: ControllerIPs}
+      NodeIndex: {get_param: NodeIndex}
 
   ExternalPort:
     type: OS::TripleO::Controller::Ports::ExternalPort

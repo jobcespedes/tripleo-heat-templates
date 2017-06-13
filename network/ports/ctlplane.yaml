@@ -1,0 +1,59 @@
+heat_template_version: newton
+
+description: >
+  Creates a port on the ctlplane network. The IP address will be
+  chosen automatically if FixedIPs is empty.
+  Note that IPv6 may not work with PXE boot, due to dependencies including
+  EUFI boot support.
+
+parameters:
+  ControlPlaneNetName:
+    description: Name of the Control Plane neutron network
+    default: ctlplane
+    type: string
+  PortName:
+    description: Name of the port
+    default: ''
+    type: string
+  FixedIPs:
+    description: >
+        Control the IP allocation for the VIP port. E.g.
+        [{'ip_address':'1.2.3.4'}]
+    default: []
+    type: json
+  IPPool: # Here for compatibility with from_pool.yaml
+    default: {}
+    type: json
+  NodeIndex: # Here for compatibility with from_pool.yaml
+    default: 0
+    type: number
+
+resources:
+
+  ControlPlanePort:
+    type: OS::Neutron::Port
+    properties:
+      network: {get_param: ControlPlaneNetName}
+      name: {get_param: PortName}
+      fixed_ips: {get_param: FixedIPs}
+      replacement_policy: AUTO
+
+outputs:
+  port_id:
+    description: The ID of the ControlPlanePort resource
+    value: {get_resource: ControlPlanePort}
+  ip_address:
+    description: Control plane (Provisioning) network IP
+    value: {get_attr: [ControlPlanePort, fixed_ips, 0, ip_address]}
+  ip_address_uri:
+    description: |
+        control plane network IP (for compatibility with ctlplane_v6.yaml)
+    value: {get_attr: [ControlPlanePort, fixed_ips, 0, ip_address]}
+  ip_subnet:
+    description: IP/Subnet CIDR for the Control Plane network IP
+    value:
+          list_join:
+            - ''
+            - - {get_attr: [ControlPlanePort, fixed_ips, 0, ip_address]}
+              - '/'
+              - {str_split: ['/', {get_attr: [ControlPlanePort, subnets, 0, cidr]}, 1]}
