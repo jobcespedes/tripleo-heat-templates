@@ -131,7 +131,6 @@ resources:
       key_name: {get_param: KeyName}
       networks:
         - network: ctlplane
-          port: {get_attr: [ControlPlanePort, port_id]}
       user_data_format: SOFTWARE_CONFIG
       user_data: {get_resource: UserData}
       name:
@@ -161,12 +160,6 @@ resources:
   # Should return a OS::Heat::MultipartMime reference via OS::stack_id
   NodeUserData:
     type: OS::TripleO::NodeUserData
-
-  ControlPlanePort:
-      type: OS::TripleO::Compute::Ports::ControlPlanePort
-      properties:
-        IPPool: {get_param: NovaComputeIPs}
-        NodeIndex: {get_param: NodeIndex}
 
   ExternalPort:
     type: OS::TripleO::Compute::Ports::ExternalPort
@@ -203,6 +196,13 @@ resources:
       IPPool: {get_param: NovaComputeIPs}
       NodeIndex: {get_param: NodeIndex}
 
+  BaremetalPort:
+    type: OS::TripleO::Compute::Ports::BaremetalPort
+    properties:
+      ControlPlaneIP: {get_attr: [NovaCompute, networks, ctlplane, 0]}
+      IPPool: {get_param: NovaComputeIPs}
+      NodeIndex: {get_param: NodeIndex}
+
   ManagementPort:
     type: OS::TripleO::Compute::Ports::ManagementPort
     properties:
@@ -229,6 +229,9 @@ resources:
       TenantIp: {get_attr: [TenantPort, ip_address]}
       TenantIpSubnet: {get_attr: [TenantPort, ip_subnet]}
       TenantIpUri: {get_attr: [TenantPort, ip_address_uri]}
+      BaremetalIp: {get_attr: [BaremetalPort, ip_address]}
+      BaremetalIpSubnet: {get_attr: [BaremetalPort, ip_subnet]}
+      BaremetalIpUri: {get_attr: [BaremetalPort, ip_address_uri]}
       ManagementIp: {get_attr: [ManagementPort, ip_address]}
       ManagementIpSubnet: {get_attr: [ManagementPort, ip_subnet]}
       ManagementIpUri: {get_attr: [ManagementPort, ip_address_uri]}
@@ -242,6 +245,7 @@ resources:
       StorageIpSubnet: {get_attr: [StoragePort, ip_subnet]}
       StorageMgmtIpSubnet: {get_attr: [StorageMgmtPort, ip_subnet]}
       TenantIpSubnet: {get_attr: [TenantPort, ip_subnet]}
+      BaremetalIpSubnet: {get_attr: [BaremetalPort, ip_subnet]}
       ManagementIpSubnet: {get_attr: [ManagementPort, ip_subnet]}
 
   NetworkDeployment:
@@ -362,6 +366,9 @@ outputs:
   tenant_ip_address:
     description: IP address of the server in the tenant network
     value: {get_attr: [TenantPort, ip_address]}
+  baremetal_ip_address:
+    description: IP address of the server in the baremetal network
+    value: {get_attr: [BaremetalPort, ip_address]}
   management_ip_address:
     description: IP address of the server in the management network
     value: {get_attr: [ManagementPort, ip_address]}
@@ -401,6 +408,12 @@ outputs:
         - - {get_attr: [NovaCompute, name]}
           - tenant
           - {get_param: CloudDomain}
+      baremetal:
+        list_join:
+        - '.'
+        - - {get_attr: [NovaCompute, name]}
+          - baremetal
+          - {get_param: CloudDomain}
       management:
         list_join:
         - '.'
@@ -425,6 +438,7 @@ outputs:
           STORAGEIP STORAGEHOST.DOMAIN STORAGEHOST
           STORAGE_MGMTIP STORAGE_MGMTHOST.DOMAIN STORAGE_MGMTHOST
           TENANTIP TENANTHOST.DOMAIN TENANTHOST
+          BAREMETALIP BAREMETALHOST.DOMAIN BAREMETALHOST
           MANAGEMENTIP MANAGEMENTHOST.DOMAIN MANAGEMENTHOST
           CTLPLANEIP CTLPLANEHOST.DOMAIN CTLPLANEHOST
         params:
@@ -461,6 +475,12 @@ outputs:
             - '.'
             - - {get_attr: [NovaCompute, name]}
               - tenant
+          BAREMETALIP: {get_attr: [BaremetalPort, ip_address]}
+          BAREMETALHOST:
+            list_join:
+            - '.'
+            - - {get_attr: [NovaCompute, name]}
+              - baremetal
           MANAGEMENTIP: {get_attr: [ManagementPort, ip_address]}
           MANAGEMENTHOST:
             list_join:

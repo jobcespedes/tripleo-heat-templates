@@ -1,0 +1,68 @@
+heat_template_version: 2015-04-30
+
+description: >
+  Baremetal network. System administration, SSH, DNS, NTP, etc. This network
+  would usually be the default gateway for the non-controller nodes.
+
+parameters:
+  # the defaults here work for static IP assignment (IPAM) only
+  BaremetalNetCidr:
+    default: '172.16.5.0/24'
+    description: Cidr for the baremetal network.
+    type: string
+  BaremetalNetValueSpecs:
+    default: {'provider:physical_network': 'baremetal', 'provider:network_type': 'flat'}
+    description: Value specs for the baremetal network.
+    type: json
+  BaremetalNetAdminStateUp:
+    default: false
+    description: The admin state of the network.
+    type: boolean
+  BaremetalNetEnableDHCP:
+    default: false
+    description: Whether to enable DHCP on the associated subnet.
+    type: boolean
+  BaremetalNetShared:
+    default: false
+    description: Whether this network is shared across all tenants.
+    type: boolean
+  BaremetalNetName:
+    default: baremetal
+    description: The name of the baremetal network.
+    type: string
+  BaremetalSubnetName:
+    default: baremetal_subnet
+    description: The name of the baremetal subnet in Neutron.
+    type: string
+  BaremetalAllocationPools:
+    default: [{'start': '172.16.5.4', 'end': '172.16.5.250'}]
+    description: Ip allocation pool range for the baremetal network.
+    type: json
+  BaremetalInterfaceDefaultRoute:
+    default: null
+    description: The default route of the baremetal network.
+    type: string
+
+resources:
+  BaremetalNetwork:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: {get_param: BaremetalNetAdminStateUp}
+      name: {get_param: BaremetalNetName}
+      shared: {get_param: BaremetalNetShared}
+      value_specs: {get_param: BaremetalNetValueSpecs}
+
+  BaremetalSubnet:
+    type: OS::Neutron::Subnet
+    properties:
+      cidr: {get_param: BaremetalNetCidr}
+      enable_dhcp: {get_param: BaremetalNetEnableDHCP}
+      name: {get_param: BaremetalSubnetName}
+      network: {get_resource: BaremetalNetwork}
+      allocation_pools: {get_param: BaremetalAllocationPools}
+      gateway_ip: {get_param: BaremetalInterfaceDefaultRoute}
+
+outputs:
+  OS::stack_id:
+    description: Neutron baremetal network
+    value: {get_resource: BaremetalNetwork}
