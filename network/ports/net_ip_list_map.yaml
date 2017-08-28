@@ -19,6 +19,9 @@ parameters:
   TenantIpList:
     default: []
     type: comma_delimited_list
+  BaremetalIpList:
+    default: []
+    type: comma_delimited_list
   ManagementIpList:
     default: []
     type: comma_delimited_list
@@ -70,6 +73,7 @@ outputs:
       storage: {get_param: StorageIpList}
       storage_mgmt: {get_param: StorageMgmtIpList}
       tenant: {get_param: TenantIpList}
+      baremetal: {get_param: BaremetalIpList}
       management: {get_param: ManagementIpList}
   service_ips:
     description: >
@@ -99,6 +103,7 @@ outputs:
                   storage: {get_param: StorageIpList}
                   storage_mgmt: {get_param: StorageMgmtIpList}
                   tenant: {get_param: TenantIpList}
+                  baremetal: {get_param: BaremetalIpList}
                   management: {get_param: ManagementIpList}
   service_hostnames:
     description: >

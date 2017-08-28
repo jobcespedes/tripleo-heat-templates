@@ -58,6 +58,16 @@ parameters:
     default: ''
     type: string
     description: IP address with brackets in case of IPv6
+  BaremetalIp:
+    default: ''
+    type: string
+  BaremetalIpSubnet:
+    default: ''
+    type: string
+  BaremetalIpUri:
+    default: ''
+    type: string
+    description: IP address with brackets in case of IPv6
   ManagementIp:
     default: ''
     type: string
@@ -81,6 +91,7 @@ outputs:
       storage: {get_param: StorageIp}
       storage_mgmt: {get_param: StorageMgmtIp}
       tenant: {get_param: TenantIp}
+      baremetal: {get_param: BaremetalIp}
       management: {get_param: ManagementIp}
       ctlplane_subnet:
         list_join:
@@ -93,6 +104,7 @@ outputs:
       storage_subnet: {get_param: StorageIpSubnet}
       storage_mgmt_subnet: {get_param: StorageMgmtIpSubnet}
       tenant_subnet: {get_param: TenantIpSubnet}
+      baremetal_subnet: {get_param: BaremetalIpSubnet}
       management_subnet: {get_param: ManagementIpSubnet}
       ctlplane_uri: {get_param: ControlPlaneIp}
       external_uri: {get_param: ExternalIpUri}
@@ -100,4 +112,5 @@ outputs:
       storage_uri: {get_param: StorageIpUri}
       storage_mgmt_uri: {get_param: StorageMgmtIpUri}
       tenant_uri: {get_param: TenantIpUri}
+      baremetal_uri: {get_param: BaremetalIpUri}
       management_uri: {get_param: ManagementIpUri}
