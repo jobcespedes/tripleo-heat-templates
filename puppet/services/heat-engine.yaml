@@ -80,7 +80,7 @@ outputs:
                   - '://'
                   - {get_param: [EndpointMap, HeatCfnPublic, host]}
                   - ':'
-                  - {get_param: [EndpointMap, MysqlInternal, port]}
+                  - {get_param: [EndpointMap, HeatCfnPublic, port]}
             heat::engine::heat_waitcondition_server_url:
               list_join:
                 - ''
@@ -88,7 +88,7 @@ outputs:
                   - '://'
                   - {get_param: [EndpointMap, HeatCfnPublic, host]}
                   - ':'
-                  - {get_param: [EndpointMap, MysqlInternal, port]}
+                  - {get_param: [EndpointMap, HeatCfnPublic, port]}
                   - '/v1/waitcondition'
             tripleo::profile::base::heat::manage_db_purge: {get_param: HeatEnableDBPurge}
             heat::database_connection:
