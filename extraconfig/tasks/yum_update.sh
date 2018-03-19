@@ -33,7 +33,19 @@ if [[ -a "$timestamp_file" ]]; then
 fi
 touch "$timestamp_file"
 
+# install openstack-nova-migration on computes prior to checking for updates
+if hiera -c /etc/puppet/hiera.yaml service_names | grep -q nova_compute; then
+    echo "Checking openstack-nova-migration is installed"
+    if ! yum -q list installed openstack-nova-migration > /dev/null 2>&1; then
+        echo "Installing openstack-nova-migration"
+        yum -q -y install openstack-nova-migration
+    fi
+fi
+
 command_arguments=${command_arguments:-}
+
+# Always ensure yum has full cache
+yum makecache || echo "Yum makecache failed. This can cause failure later on."
 
 # yum check-update exits 100 if updates are available
 set +e
@@ -62,7 +74,7 @@ touch /etc/httpd/conf.d/ssl.conf
 # Fix the redis/rabbit resource start/stop timeouts. See https://bugs.launchpad.net/tripleo/+bug/1633455
 # and https://bugs.launchpad.net/tripleo/+bug/1634851
 if [[ "$pacemaker_status" == "active" && \
-      "$(hiera -c /etc/puppet/hiera.yaml bootstrap_nodeid)" = "$(facter hostname)" ]] ; then
+      -n $(is_bootstrap_node) ]] ; then
     if pcs resource show rabbitmq | grep -E "start.*timeout=100"; then
         pcs resource update rabbitmq op start timeout=200s
     fi
@@ -77,9 +89,6 @@ if [[ "$pacemaker_status" == "active" && \
     fi
 fi
 
-# special case https://bugs.launchpad.net/tripleo/+bug/1635205 +bug/1669714
-special_case_ovs_upgrade_if_needed
-
 if [[ "$pacemaker_status" == "active" ]] ; then
     echo "Pacemaker running, stopping cluster node and doing full package update"
     node_count=$(pcs status xml | grep -o "<nodes_configured.*/>" | grep -o 'number="[0-9]*"' | grep -o "[0-9]*")
@@ -89,8 +98,11 @@ if [[ "$pacemaker_status" == "active" ]] ; then
     else
         pcs cluster stop
     fi
+    update_network
 else
+    update_network
     echo "Upgrading openstack-puppet-modules and its dependencies"
+    check_for_yum_lock
     yum -q -y update openstack-puppet-modules
     yum deplist openstack-puppet-modules | awk '/dependency/{print $2}' | xargs yum -q -y update
     echo "Upgrading other packages is handled by config management tooling"
@@ -100,23 +112,13 @@ fi
 
 command=${command:-update}
 full_command="yum -q -y $command $command_arguments"
-echo "Running: $full_command"
 
+echo "Running: $full_command"
+check_for_yum_lock
 result=$($full_command)
 return_code=$?
 echo "$result"
 echo "yum return code: $return_code"
-
-# Writes any changes caused by alterations to os-net-config and bounces the
-# interfaces *before* restarting the cluster.
-os-net-config -c /etc/os-net-config/config.json -v --detailed-exit-codes
-RETVAL=$?
-if [[ $RETVAL == 2 ]]; then
-    echo "os-net-config: interface configuration files updated successfully"
-elif [[ $RETVAL != 0 ]]; then
-    echo "ERROR: os-net-config configuration failed"
-    exit $RETVAL
-fi
 
 if [[ "$pacemaker_status" == "active" ]] ; then
     echo "Starting cluster node"
@@ -158,7 +160,7 @@ fi
 # a performance impairment. So, as a stop-gap-solution we run it here on the
 # first controller node, which is a noop if there is nothing to do.
 if hiera -c /etc/puppet/hiera.yaml service_names | grep -q nova_api && \
-  [[ "$(hiera -c /etc/puppet/hiera.yaml bootstrap_nodeid)" = "$(facter hostname)" ]] ; then
+  [[ -n $(is_bootstrap_node) ]] ; then
     /usr/bin/nova-manage db online_data_migrations
 fi
 

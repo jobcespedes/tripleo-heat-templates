@@ -10,12 +10,13 @@ function ping_retry() {
     PING_CMD=ping6
   fi
   until [ $COUNT -ge $TIMES ]; do
-    if $PING_CMD -w 300 -c 1 $IP_ADDR &> /dev/null; then
+    if $PING_CMD -w 10 -c 1 $IP_ADDR &> /dev/null; then
       echo "Ping to $IP_ADDR succeeded."
       return 0
     fi
     echo "Ping to $IP_ADDR failed. Retrying..."
     COUNT=$(($COUNT + 1))
+    sleep 60
   done
   return 1
 }
@@ -67,5 +68,23 @@ function ping_default_gateways() {
   echo "SUCCESS"
 }
 
+# Verify the FQDN from the nova/ironic deployment matches
+# FQDN in the heat templates.
+function fqdn_check() {
+  HOSTNAME=$(hostname)
+  SHORT_NAME=$(hostname -s)
+  FQDN_FROM_HOSTS=$(awk '$3 == "'${SHORT_NAME}'"{print $2}' /etc/hosts)
+  echo -n "Checking hostname vs /etc/hosts entry..."
+  if [[ $HOSTNAME != $FQDN_FROM_HOSTS ]]; then
+    echo "FAILURE"
+    echo -e "System hostname: ${HOSTNAME}\nEntry from /etc/hosts: ${FQDN_FROM_HOSTS}\n"
+    exit 1
+  fi
+  echo "SUCCESS"
+}
+
 ping_controller_ips "$ping_test_ips"
 ping_default_gateways
+if [[ $validate_fqdn == "True" ]];then
+  fqdn_check
+fi
