@@ -29,9 +29,9 @@ resource_registry:
   OS::TripleO::CephStorage::Ports::TenantPort: ../network/ports/noop.yaml
 
   # Port assignments for the swift storage role
-  OS::TripleO::SwiftStorage::Ports::ExternalPort: ../network/ports/noop.yaml
-  OS::TripleO::SwiftStorage::Ports::InternalApiPort: ../network/ports/internal_api.yaml
-  OS::TripleO::SwiftStorage::Ports::TenantPort: ../network/ports/noop.yaml
+  OS::TripleO::ObjectStorage::Ports::ExternalPort: ../network/ports/noop.yaml
+  OS::TripleO::ObjectStorage::Ports::InternalApiPort: ../network/ports/internal_api.yaml
+  OS::TripleO::ObjectStorage::Ports::TenantPort: ../network/ports/noop.yaml
 
   # Port assignments for the block storage role
   OS::TripleO::BlockStorage::Ports::ExternalPort: ../network/ports/noop.yaml
