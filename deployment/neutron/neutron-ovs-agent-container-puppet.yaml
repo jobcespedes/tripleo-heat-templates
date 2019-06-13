@@ -362,7 +362,7 @@ outputs:
               - name: Run iptables -t raw -L to workaround a rhel8.0 bug (remove once rhbz#1673609 is fixed)
                 shell: |
                   iptables -t raw -nL
-                  ip6tables -t raw -nL
+                  # ip6tables -t raw -nL
       update_tasks:
         # puppetlabs-firewall manages security rules via Puppet but make the rules
         # consistent by default. Since Neutron also creates some rules, we don't
